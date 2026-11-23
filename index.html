@@ -1,0 +1,544 @@
+<title>Lista de Presentes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ultra&family=Lexend:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one snow-globe "phone card" floating over a lavender winter sky with drifting snow and snowy hills. */
+:root {
+  --sky: #D3DCF0;
+  --sky-deep: #BCC8E8;
+  --card: #F1F3FC;
+  --tile: #FFFFFF;
+  --ink: #1E2235;
+  --ink-soft: #5B6078;
+  --ink-faint: #9AA0BA;
+  --navy: #1F2A44;
+  --heart: #B7BCE6;
+  --heart-on: #E8505B;
+  --orange: #F26B2A;
+  --green: #6CCB9E;
+  --violet: #A7A8F0;
+  --sun: #FFCE3D;
+  --line: #DDE2F3;
+  --snow: #FFFFFF;
+  --danger: #D9434E;
+  --font-display: "Ultra", "Rockwell Extra Bold", "Rockwell", Georgia, serif;
+  --font-body: "Lexend", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius-card: 34px;
+  --radius-tile: 26px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  background: linear-gradient(180deg, var(--sky-deep) 0%, var(--sky) 55%, #E3E8F6 100%);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 120px;
+  overflow-x: hidden;
+}
+#snow { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.hills { position: fixed; left: 0; right: 0; bottom: 0; height: 110px; z-index: 0; pointer-events: none; }
+.hills svg { width: 100%; height: 100%; display: block; }
+
+.app {
+  position: relative; z-index: 1;
+  max-width: 520px; margin: 0 auto;
+  background: var(--card);
+  border-radius: var(--radius-card);
+  box-shadow: 0 30px 60px -30px rgba(44, 58, 110, .45), 0 2px 0 rgba(255,255,255,.8) inset;
+  padding: 30px 22px 28px;
+  min-height: 640px;
+  display: flex; flex-direction: column;
+}
+h1, h2 {
+  font-family: var(--font-display); font-weight: 400;
+  text-align: center; text-wrap: balance;
+  margin: 0; letter-spacing: .01em; line-height: 1.12;
+}
+h1 { font-size: clamp(26px, 6.4vw, 32px); }
+h2 { font-size: 22px; }
+.sub { text-align: center; color: var(--ink-soft); margin: 10px auto 0; max-width: 30ch; }
+
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible, .tile:focus-visible {
+  outline: 3px solid var(--orange); outline-offset: 3px;
+}
+.screen { display: flex; flex-direction: column; flex: 1; }
+.spacer { flex: 1; }
+
+/* Intro */
+.tree-wrap {
+  margin: 28px auto 0; width: min(230px, 70%); aspect-ratio: 230/300;
+  background: var(--tile); border-radius: 120px 120px 22px 22px;
+  display: grid; place-items: end center; padding: 10px 8px 14px;
+}
+.tree-wrap svg { width: 100%; height: auto; }
+.dots { display: flex; gap: 6px; justify-content: center; margin-top: 26px; }
+.dots span { width: 22px; height: 4px; border-radius: 4px; background: var(--line); }
+.dots span.on { width: 32px; background: var(--ink); }
+.next {
+  align-self: flex-end; width: 52px; height: 52px; border-radius: 50%;
+  display: grid; place-items: center; transition: transform .2s, background .2s;
+}
+.next:hover { background: var(--tile); transform: translateX(3px); }
+.next svg { width: 30px; height: 30px; }
+
+/* Who */
+.who-form { display: flex; flex-direction: column; gap: 12px; margin-top: 26px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+input, textarea {
+  font: inherit; color: var(--ink); width: 100%;
+  background: var(--tile); border: 2px solid var(--line); border-radius: 16px;
+  padding: 12px 14px; min-width: 0;
+}
+textarea { resize: vertical; min-height: 70px; }
+input:focus, textarea:focus { border-color: var(--violet); outline: none; }
+.btn {
+  background: var(--navy); color: #fff; border-radius: 999px;
+  padding: 13px 22px; font-weight: 600; text-align: center;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  text-decoration: none; transition: transform .15s, box-shadow .15s;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -8px rgba(31,42,68,.6); }
+.btn.ghost { background: var(--tile); color: var(--ink); border: 2px solid var(--line); }
+.btn.danger { background: var(--danger); }
+.btn[disabled] { opacity: .5; pointer-events: none; }
+.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 14px; margin-top: 26px; }
+.person {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 6px; border-radius: 22px; transition: background .2s;
+}
+.person:hover { background: var(--tile); }
+.person .av { width: 96px; height: 96px; }
+.person span { font-size: 16px; }
+.people-label { text-align: center; color: var(--ink-faint); font-size: 13px; margin-top: 26px; }
+.empty-people { display: flex; justify-content: center; gap: 18px; margin-top: 22px; }
+.empty-people .av { width: 104px; height: 104px; }
+
+/* Lists */
+.topbar { display: flex; align-items: center; justify-content: space-between; margin: -8px -4px 6px; }
+.icon-btn { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; }
+.icon-btn:hover { background: var(--tile); }
+.icon-btn svg { width: 22px; height: 22px; }
+.owner-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; margin-top: 18px; scrollbar-width: none; }
+.owner-row::-webkit-scrollbar { display: none; }
+.owner {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  padding: 4px 14px 4px 4px; border-radius: 999px; background: var(--tile);
+  border: 2px solid transparent; font-weight: 500;
+}
+.owner .av { width: 34px; height: 34px; }
+.owner.on { border-color: var(--navy); }
+.owner small { color: var(--ink-faint); font-weight: 400; }
+.pills { display: flex; gap: 4px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.pill { padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.pill.on { background: var(--navy); color: #fff; }
+.pill .n { opacity: .6; font-weight: 400; margin-left: 4px; }
+.readonly {
+  margin-top: 14px; text-align: center; font-size: 13px; color: var(--ink-soft);
+  background: var(--tile); border-radius: 14px; padding: 9px 12px;
+}
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 14px; margin-top: 20px; }
+.tile { text-align: left; display: flex; flex-direction: column; gap: 8px; border-radius: var(--radius-tile); min-width: 0; }
+.tile .pic {
+  position: relative; aspect-ratio: 1 / 1.05; border-radius: 40px 40px var(--radius-tile) var(--radius-tile);
+  background: var(--tile); overflow: hidden; display: grid; place-items: center;
+  transition: transform .2s;
+}
+.tile:hover .pic { transform: translateY(-3px); }
+.tile .pic img { width: 78%; height: 72%; object-fit: contain; }
+.tile .pic .ph { width: 56%; }
+.tile .price { position: absolute; right: 12px; bottom: 9px; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; background: rgba(255,255,255,.85); padding: 1px 6px; border-radius: 8px; }
+.heart { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; }
+.heart svg { width: 19px; height: 19px; fill: var(--heart); transition: transform .2s, fill .2s; }
+.heart.on svg { fill: var(--heart-on); }
+button.heart:hover svg { transform: scale(1.15); }
+.tile .meta { padding: 0 6px; min-width: 0; }
+.tile .name { font-weight: 600; font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+.tile .store { color: var(--ink-soft); font-size: 13px; overflow-wrap: anywhere; }
+.add-tile .pic { border: 2px dashed var(--line); background: transparent; }
+.add-tile .plus { width: 52px; height: 52px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: 28px; line-height: 1; }
+.empty { text-align: center; color: var(--ink-soft); padding: 34px 10px 10px; grid-column: 1 / -1; }
+.empty svg { width: 90px; margin-bottom: 8px; }
+.total { text-align: center; color: var(--ink-faint); font-size: 12px; margin-top: 18px; font-variant-numeric: tabular-nums; }
+.status { text-align: center; font-size: 12px; color: var(--ink-faint); margin-top: 16px; }
+
+/* Sheet */
+.scrim { position: fixed; inset: 0; background: rgba(30, 34, 53, .38); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  background: var(--card); width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+  border-radius: 30px 30px 0 0; padding: 22px max(20px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+  animation: up .28s cubic-bezier(.2,.8,.2,1);
+}
+@media (min-width: 640px) { .scrim { align-items: center; } .sheet { border-radius: 30px; } }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+.sheet h2 { margin-bottom: 18px; }
+.sheet form { display: flex; flex-direction: column; gap: 14px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.seg { display: flex; background: var(--tile); border-radius: 999px; padding: 4px; border: 2px solid var(--line); }
+.seg button { flex: 1; padding: 9px; border-radius: 999px; font-weight: 600; font-size: 13px; color: var(--ink-soft); }
+.seg button.on { background: var(--navy); color: #fff; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.actions .btn { flex: 1; min-width: 120px; }
+.detail-pic { background: var(--tile); border-radius: 40px 40px 24px 24px; aspect-ratio: 4/3; display: grid; place-items: center; overflow: hidden; margin-bottom: 16px; }
+.detail-pic img { max-width: 80%; max-height: 85%; object-fit: contain; }
+.detail-pic .ph { width: 34%; }
+.detail-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.detail-head h2 { text-align: left; font-size: 22px; overflow-wrap: anywhere; }
+.detail-price { font-weight: 700; font-size: 20px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.detail-store { color: var(--ink-soft); margin-top: 4px; }
+.detail-note { background: var(--tile); border-radius: 16px; padding: 12px 14px; margin-top: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.chip { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: var(--line); color: var(--ink-soft); margin-top: 10px; }
+.confirm { background: #FCE7E8; color: var(--danger); border-radius: 16px; padding: 12px 14px; font-size: 14px; }
+.err { color: var(--danger); font-size: 13px; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--navy); color: #fff; padding: 10px 18px; border-radius: 999px; z-index: 30; font-size: 14px;
+  animation: up .25s;
+}
+@media (max-width: 380px) { .grid { gap: 14px 10px; } .row2 { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<canvas id="snow" aria-hidden="true"></canvas>
+<div class="hills" aria-hidden="true">
+  <svg viewBox="0 0 1440 110" preserveAspectRatio="none"><path d="M0 70 C 240 20, 420 20, 640 55 S 1020 95, 1200 50 S 1400 30, 1440 45 L1440 110 L0 110Z" fill="#E6EAF5"/><path d="M0 92 C 300 60, 520 70, 760 88 S 1180 70, 1440 84 L1440 110 L0 110Z" fill="#F4F6FC"/></svg>
+</div>
+
+<main class="app" id="app" aria-live="polite"></main>
+
+<script>
+(() => {
+  "use strict";
+  /* ---------- helpers ---------- */
+  const $app = document.getElementById("app");
+  const h = (tag, attrs = {}, ...kids) => {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v;
+      else if (k === "html") el.innerHTML = v;
+      else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? "" : v);
+    }
+    for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : String(kid));
+    return el;
+  };
+  const svg = (markup) => { const t = document.createElement("template"); t.innerHTML = markup.trim(); return t.content.firstChild; };
+  const slug = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+  const safeUrl = (u) => { try { const x = new URL(String(u).trim()); return /^https?:$/.test(x.protocol) ? x.href : null; } catch { return null; } };
+  const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } };
+  const money = (n) => (typeof n === "number" && isFinite(n)) ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "";
+  const parsePrice = (s) => { if (!s) return null; const c = String(s).replace(/[^\d,.]/g, ""); if (!c) return null; const n = c.includes(",") ? Number(c.replace(/\./g, "").replace(",", ".")) : Number(c); return isFinite(n) ? n : null; };
+  const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} }, del(k) { try { localStorage.removeItem(k); } catch {} } };
+  const toast = (msg) => { const t = h("div", { class: "toast", role: "status" }, msg); document.body.append(t); setTimeout(() => t.remove(), 2200); };
+  const OCC = { natal: "Natal", aniversario: "Aniversário" };
+
+  /* ---------- illustrations ---------- */
+  const PALETTES = [
+    { face: "#FFD23F", hat: "#F26B2A", trim: "#FBE6C4", cheek: "#F58A5B", ear: "#6CCB9E" },
+    { face: "#A9A6F2", hat: "#6CCB9E", trim: "#C9F0DC", cheek: "#8C88E6", ear: "#F26B2A" },
+    { face: "#F6B38F", hat: "#E8505B", trim: "#FFFFFF", cheek: "#EE8A70", ear: "#FFD23F" },
+    { face: "#8FD4C1", hat: "#5B6BD8", trim: "#DCE1FF", cheek: "#6DBBA6", ear: "#FFD23F" },
+  ];
+  const hash = (s) => { let x = 0; for (const c of s) x = (x * 31 + c.charCodeAt(0)) >>> 0; return x; };
+  function avatar(key, idx) {
+    const p = PALETTES[(idx ?? hash(key)) % PALETTES.length];
+    const elf = ((idx ?? hash(key)) % 2) === 1;
+    const hat = elf
+      ? `<path d="M22 50 C 24 20, 60 8, 84 22 C 96 30, 104 44, 106 60 L 30 60 Z" fill="${p.hat}"/><circle cx="18" cy="62" r="7" fill="${p.ear}"/>`
+      : `<path d="M28 52 C 34 18, 76 10, 96 30 C 100 24, 104 20, 104 14 L 112 18 C 110 30, 104 42, 100 56 Z" fill="${p.hat}"/><circle cx="108" cy="14" r="6" fill="${p.ear}"/>`;
+    return svg(`<svg class="av" viewBox="0 0 128 128" aria-hidden="true">
+      <circle cx="64" cy="66" r="58" fill="#FFFFFF"/>
+      <g fill="#1B1F2E"><circle cx="32" cy="80" r="16"/><circle cx="96" cy="80" r="16"/><circle cx="40" cy="96" r="14"/><circle cx="88" cy="96" r="14"/><circle cx="64" cy="100" r="14"/></g>
+      <circle cx="64" cy="78" r="30" fill="${p.face}"/>
+      <circle cx="40" cy="80" r="5" fill="${p.ear}"/><circle cx="88" cy="80" r="5" fill="${p.ear}"/>
+      <circle cx="48" cy="86" r="6" fill="${p.cheek}" opacity=".7"/><circle cx="80" cy="86" r="6" fill="${p.cheek}" opacity=".7"/>
+      <ellipse cx="54" cy="76" rx="5.5" ry="6.5" fill="#fff"/><ellipse cx="74" cy="76" rx="5.5" ry="6.5" fill="#fff"/>
+      <circle cx="55" cy="77" r="3.4" fill="#1B1F2E"/><circle cx="75" cy="77" r="3.4" fill="#1B1F2E"/>
+      <path d="M56 89 Q 64 97 72 89 Z" fill="#1B1F2E"/>
+      ${hat}
+      <g fill="${p.trim}"><circle cx="30" cy="58" r="8"/><circle cx="42" cy="54" r="8"/><circle cx="54" cy="52" r="8"/><circle cx="66" cy="52" r="8"/><circle cx="78" cy="53" r="8"/><circle cx="90" cy="56" r="8"/><circle cx="100" cy="60" r="7"/></g>
+    </svg>`);
+  }
+  const giftPh = (key) => {
+    const p = PALETTES[hash(key || "x") % PALETTES.length];
+    return svg(`<svg class="ph" viewBox="0 0 100 100" aria-hidden="true">
+      <rect x="14" y="40" width="72" height="50" rx="6" fill="${p.face}"/>
+      <rect x="8" y="30" width="84" height="16" rx="5" fill="${p.hat}"/>
+      <rect x="44" y="30" width="12" height="60" fill="${p.trim}"/>
+      <path d="M50 30 C 36 8, 18 18, 30 28 Z M50 30 C 64 8, 82 18, 70 28 Z" fill="${p.ear}"/>
+    </svg>`);
+  };
+  const TREE = `<svg viewBox="0 0 220 290" aria-hidden="true">
+    <path d="M110 34 L170 120 L148 120 L186 186 L160 186 L200 250 L20 250 L60 186 L34 186 L72 120 L50 120 Z" fill="#6CCB9E"/>
+    <path d="M110 34 L72 120 L94 120 Z M60 186 L92 186 L72 214 Z" fill="#1B1F2E" opacity=".9"/>
+    <rect x="100" y="250" width="20" height="22" fill="#7A4A2A"/>
+    <polygon points="110,10 116,24 131,24 119,33 124,47 110,38 96,47 101,33 89,24 104,24" fill="#FFCE3D"/>
+    <g><circle cx="110" cy="70" r="5" fill="#F26B2A"/><circle cx="92" cy="104" r="5" fill="#FFCE3D"/><circle cx="130" cy="98" r="5" fill="#F26B2A"/>
+    <circle cx="78" cy="150" r="5" fill="#F26B2A"/><circle cx="112" cy="140" r="5" fill="#FFCE3D"/><circle cx="148" cy="160" r="5" fill="#F26B2A"/>
+    <circle cx="64" cy="222" r="5" fill="#FFCE3D"/><circle cx="104" cy="206" r="5" fill="#F26B2A"/><circle cx="142" cy="224" r="5" fill="#FFCE3D"/><circle cx="172" cy="236" r="5" fill="#F26B2A"/></g>
+    <rect x="30" y="236" width="44" height="40" rx="4" fill="#FFCE3D"/><rect x="48" y="236" width="8" height="40" fill="#F26B2A"/><rect x="26" y="230" width="52" height="10" rx="3" fill="#F26B2A"/>
+    <rect x="124" y="222" width="30" height="54" rx="4" fill="#9FE3D0"/><rect x="124" y="242" width="30" height="7" fill="#E8909A"/>
+    <rect x="150" y="248" width="48" height="28" rx="4" fill="#A7A8F0"/><rect x="170" y="248" width="8" height="28" fill="#5B6BD8"/>
+  </svg>`;
+  const ARROW = `<svg viewBox="0 0 32 32" fill="none" stroke="#1E2235" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l7 7-7 7M16 9l7 7-7 7"/></svg>`;
+  const HEART = `<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11.2A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 2.8C20 15.7 12 21 12 21z"/></svg>`;
+
+  /* ---------- data layer: shared db, or this browser as a fallback ---------- */
+  const state = { people: [], gifts: [], screen: "intro", me: null, viewing: null, occ: "natal", mode: "loading", canWrite: true };
+  let backend = null;
+
+  const local = {
+    read() { try { return JSON.parse(store.get("giftlist:data") || "{}"); } catch { return {}; } },
+    write(d) { store.set("giftlist:data", JSON.stringify(d)); },
+    emit() { const d = local.read(); state.people = Object.values(d.people || {}); state.gifts = Object.entries(d.gifts || {}).map(([id, g]) => ({ id, ...g })); render(); },
+  };
+  const api = {
+    async putPerson(id, data) {
+      if (backend) return backend.doc("people/" + id).set(data);
+      const d = local.read(); d.people = d.people || {}; d.people[id] = data; local.write(d); local.emit();
+    },
+    async putGift(id, data) {
+      if (backend) return backend.doc("gifts/" + id).set(data);
+      const d = local.read(); d.gifts = d.gifts || {}; d.gifts[id] = data; local.write(d); local.emit();
+    },
+    async delGift(id) {
+      if (backend) return backend.doc("gifts/" + id).delete();
+      const d = local.read(); delete (d.gifts || {})[id]; local.write(d); local.emit();
+    },
+  };
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  async function connect() {
+    let db = null;
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { db = null; }
+    if (!db) { state.mode = "local"; local.emit(); return; }
+    backend = db;
+    state.mode = "loading";
+    const timer = setTimeout(() => { if (state.mode === "loading") { state.mode = "slow"; render(); } }, 10000);
+    const onErr = (e) => { clearTimeout(timer); if (e && (e.code === "revoked" || e.code === "not_granted")) state.canWrite = false; state.mode = "error"; render(); };
+    let gotP = false, gotG = false;
+    const ready = () => { if (gotP && gotG) { clearTimeout(timer); state.mode = "db"; } render(); };
+    db.collection("people").onSnapshot((s) => { gotP = true; state.people = s.docs.map((d) => d.data()).filter(Boolean); ready(); }, onErr);
+    db.collection("gifts").onSnapshot((s) => { gotG = true; state.gifts = s.docs.map((d) => ({ id: d.id, ...d.data() })); ready(); }, onErr);
+  }
+
+  /* ---------- screens ---------- */
+  function render() {
+    const focusId = document.activeElement && document.activeElement.id;
+    $app.replaceChildren(...(state.screen === "intro" ? intro() : state.screen === "who" ? who() : lists()));
+    if (focusId) { const f = document.getElementById(focusId); if (f) f.focus(); }
+  }
+  const go = (screen) => { state.screen = screen; render(); window.scrollTo({ top: 0 }); };
+
+  function intro() {
+    return [h("section", { class: "screen" },
+      h("h1", {}, "É a hora perfeita", h("br"), "para a magia"),
+      h("p", { class: "sub" }, "Monte sua lista de presentes de Natal e de aniversário, e veja a de quem você ama."),
+      h("div", { class: "tree-wrap", html: TREE }),
+      h("div", { class: "dots", "aria-hidden": "true" }, h("span"), h("span"), h("span", { class: "on" })),
+      h("div", { class: "spacer" }),
+      h("button", { class: "next", "aria-label": "Começar", html: ARROW, onclick: () => go(state.me ? "lists" : "who") }),
+    )];
+  }
+
+  function who() {
+    const err = h("p", { class: "err", hidden: true });
+    const input = h("input", { id: "who-name", autocomplete: "name", placeholder: "Ex.: Maria Júlia", maxlength: "40", required: true });
+    const form = h("form", { class: "who-form", onsubmit: async (e) => {
+      e.preventDefault();
+      const name = input.value.trim().replace(/\s+/g, " ");
+      const id = slug(name);
+      if (!id) { err.textContent = "Digite seu nome para continuar."; err.hidden = false; return; }
+      const existing = state.people.find((p) => p.id === id);
+      if (!existing) {
+        try { await api.putPerson(id, { id, name, createdAt: Date.now(), avatar: state.people.length % PALETTES.length }); }
+        catch (e2) { err.textContent = "Não deu para salvar seu nome agora. Confira sua conexão e tente de novo."; err.hidden = false; return; }
+      }
+      login(id);
+    } },
+      h("div", { class: "field" }, h("label", { for: "who-name" }, "Seu nome"), input),
+      err,
+      h("button", { class: "btn", type: "submit" }, "Abrir minha lista"),
+    );
+    const people = [...state.people].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    return [h("section", { class: "screen" },
+      h("h1", {}, "Quem está escolhendo os presentes?"),
+      h("p", { class: "sub" }, "Vamos começar a magia! Digite seu nome ou toque em você."),
+      people.length
+        ? [h("p", { class: "people-label" }, "Já têm lista aqui"),
+           h("div", { class: "people" }, people.map((p) => h("button", { class: "person", type: "button", onclick: () => login(p.id) }, avatar(p.id, p.avatar), h("span", {}, p.name))))]
+        : h("div", { class: "empty-people" }, avatar("a", 0), avatar("b", 1)),
+      form,
+      state.mode === "local" ? h("p", { class: "status" }, "Abra pelo link do Claude para salvar e compartilhar. Fora dele, a lista fica só neste navegador.") : null,
+    )];
+  }
+
+  function login(id) {
+    state.me = id; state.viewing = id; store.set("giftlist:me", id); go("lists");
+  }
+
+  function lists() {
+    const me = state.people.find((p) => p.id === state.me);
+    if (!me && state.mode !== "loading" && state.mode !== "slow") { state.me = null; store.del("giftlist:me"); return who(); }
+    const view = state.people.find((p) => p.id === state.viewing) || me;
+    const mine = view && view.id === state.me;
+    const people = [...state.people].sort((a, b) => (a.id === state.me ? -1 : b.id === state.me ? 1 : (a.createdAt || 0) - (b.createdAt || 0)));
+    const ofView = state.gifts.filter((g) => view && g.owner === view.id);
+    const items = ofView.filter((g) => g.occasion === state.occ).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || (a.createdAt || 0) - (b.createdAt || 0));
+    const count = (o) => ofView.filter((g) => g.occasion === o).length;
+    const sum = items.reduce((s, g) => s + (typeof g.price === "number" ? g.price : 0), 0);
+
+    const grid = h("div", { class: "grid" });
+    if (mine) grid.append(h("button", { class: "tile add-tile", type: "button", onclick: () => openForm(null) },
+      h("div", { class: "pic" }, h("span", { class: "plus", "aria-hidden": "true" }, "+")),
+      h("div", { class: "meta" }, h("div", { class: "name" }, "Adicionar presente"), h("div", { class: "store" }, "Cole o link do produto"))));
+    for (const g of items) grid.append(tile(g, mine));
+    if (!items.length && !mine) grid.append(h("div", { class: "empty" }, giftPh(view ? view.id : "x"), h("p", {}, `${view ? view.name : "Essa pessoa"} ainda não adicionou presentes de ${OCC[state.occ]}.`)));
+    if (state.mode === "loading" || state.mode === "slow") grid.replaceChildren(h("div", { class: "empty" }, state.mode === "slow" ? "Está demorando para carregar as listas. Recarregue a página se continuar assim." : "Carregando as listas…"));
+
+    return [h("section", { class: "screen" },
+      h("div", { class: "topbar" },
+        h("button", { class: "icon-btn", "aria-label": "Trocar de pessoa", title: "Trocar de pessoa", onclick: () => { state.me = null; store.del("giftlist:me"); go("who"); },
+          html: `<svg viewBox="0 0 24 24" fill="none" stroke="#1E2235" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>` }),
+        mine ? h("button", { class: "icon-btn", "aria-label": "Adicionar presente", title: "Adicionar presente", onclick: () => openForm(null),
+          html: `<svg viewBox="0 0 24 24" fill="#1E2235"><rect x="3" y="9" width="18" height="4" rx="1"/><rect x="4.5" y="13" width="15" height="8" rx="1"/><rect x="11" y="9" width="2" height="12" fill="#F1F3FC"/><path d="M12 9C9 4 5 6 7.5 8.5 9 9 12 9 12 9zm0 0c3-5 7-3 4.5-.5C15 9 12 9 12 9z"/></svg>` }) : h("span", { style: "width:42px" }),
+      ),
+      h("h1", {}, mine ? "Minha lista de presentes" : `Lista de ${view ? view.name : ""}`),
+      h("div", { class: "owner-row", role: "tablist", "aria-label": "De quem é a lista" },
+        people.map((p) => h("button", { class: "owner" + (view && p.id === view.id ? " on" : ""), role: "tab", "aria-selected": String(!!view && p.id === view.id), onclick: () => { state.viewing = p.id; render(); } },
+          avatar(p.id, p.avatar), h("span", {}, p.name, p.id === state.me ? h("small", {}, " · você") : null)))),
+      h("div", { class: "pills", role: "tablist", "aria-label": "Ocasião" },
+        Object.entries(OCC).map(([k, label]) => h("button", { class: "pill" + (state.occ === k ? " on" : ""), role: "tab", "aria-selected": String(state.occ === k), onclick: () => { state.occ = k; render(); } }, label, h("span", { class: "n" }, count(k))))),
+      !mine && view ? h("p", { class: "readonly" }, `Só para ver: quem edita essa lista é ${view.name}.`) : null,
+      grid,
+      items.length ? h("p", { class: "total" }, `${items.length} ${items.length === 1 ? "presente" : "presentes"}${sum ? " · total " + money(sum) : ""}`) : null,
+      state.mode === "local" ? h("p", { class: "status" }, "Salvo só neste navegador. Abra pelo link do Claude para compartilhar.") : null,
+      state.mode === "error" ? h("p", { class: "status" }, "Sem conexão com a lista compartilhada agora. Recarregue a página.") : null,
+    )];
+  }
+
+  function tile(g, mine) {
+    const pic = h("div", { class: "pic" });
+    const img = safeUrl(g.image);
+    if (img) pic.append(h("img", { src: img, alt: "", loading: "lazy", onerror: (e) => e.target.replaceWith(giftPh(g.id)) }));
+    else pic.append(giftPh(g.id));
+    if (mine) pic.append(h("button", { class: "heart" + (g.fav ? " on" : ""), type: "button", "aria-pressed": String(!!g.fav), "aria-label": g.fav ? "Tirar dos favoritos" : "Marcar como favorito", html: HEART,
+      onclick: (e) => { e.stopPropagation(); api.putGift(g.id, { ...strip(g), fav: !g.fav }).catch(() => toast("Não deu para salvar. Tente de novo.")); } }));
+    else if (g.fav) pic.append(h("span", { class: "heart on", title: "Favorito", html: HEART }));
+    if (typeof g.price === "number") pic.append(h("span", { class: "price" }, money(g.price)));
+    return h("div", { class: "tile", role: "button", tabindex: "0", onclick: () => openDetail(g, mine), onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(g, mine); } } },
+      pic, h("div", { class: "meta" }, h("div", { class: "name" }, g.title), h("div", { class: "store" }, g.store || hostOf(g.link) || " ")));
+  }
+  const strip = (g) => { const { id, ...rest } = g; return rest; };
+
+  /* ---------- sheets ---------- */
+  function sheet(...content) {
+    const close = () => { scrim.remove(); document.removeEventListener("keydown", esc); };
+    const esc = (e) => { if (e.key === "Escape") close(); };
+    const scrim = h("div", { class: "scrim", onclick: (e) => { if (e.target === scrim) close(); } }, h("div", { class: "sheet", role: "dialog", "aria-modal": "true" }, ...content));
+    document.addEventListener("keydown", esc);
+    document.body.append(scrim);
+    return close;
+  }
+
+  function openDetail(g, mine) {
+    const link = safeUrl(g.link);
+    const img = safeUrl(g.image);
+    const pic = h("div", { class: "detail-pic" }, img ? h("img", { src: img, alt: g.title, onerror: (e) => e.target.replaceWith(giftPh(g.id)) }) : giftPh(g.id));
+    const actions = h("div", { class: "actions" });
+    const confirmBox = h("div", { hidden: true });
+    let close;
+    if (link) actions.append(h("a", { class: "btn", href: link, target: "_blank", rel: "noopener noreferrer" }, "Ver produto ↗"));
+    if (mine) {
+      actions.append(h("button", { class: "btn ghost", type: "button", onclick: () => { close(); openForm(g); } }, "Editar"));
+      actions.append(h("button", { class: "btn ghost", type: "button", onclick: () => { confirmBox.hidden = false; } }, "Excluir"));
+      confirmBox.append(h("div", { class: "confirm" }, h("p", { style: "margin:0 0 10px" }, `Excluir "${g.title}" da sua lista?`),
+        h("div", { class: "actions" },
+          h("button", { class: "btn ghost", type: "button", onclick: () => { confirmBox.hidden = true; } }, "Manter"),
+          h("button", { class: "btn danger", type: "button", onclick: async () => { try { await api.delGift(g.id); close(); toast("Presente excluído"); } catch { toast("Não deu para excluir. Tente de novo."); } } }, "Excluir"))));
+    }
+    close = sheet(pic,
+      h("div", { class: "detail-head" }, h("h2", {}, g.title), typeof g.price === "number" ? h("span", { class: "detail-price" }, money(g.price)) : null),
+      (g.store || hostOf(g.link)) ? h("div", { class: "detail-store" }, g.store || hostOf(g.link)) : null,
+      h("span", { class: "chip" }, OCC[g.occasion] || ""), g.fav ? h("span", { class: "chip", style: "margin-left:6px" }, "♥ favorito") : null,
+      g.note ? h("div", { class: "detail-note" }, g.note) : null,
+      h("div", { style: "height:16px" }), actions, h("div", { style: "height:10px" }), confirmBox,
+      !link ? h("p", { class: "status" }, "Sem link do produto.") : null);
+  }
+
+  function openForm(g) {
+    const editing = !!g;
+    let occ = g ? g.occasion : state.occ;
+    const f = (id, label, attrs = {}, tag = "input") => {
+      const el = h(tag, { id, name: id, ...attrs });
+      return [el, h("div", { class: "field" }, h("label", { for: id }, label), el)];
+    };
+    const [title, titleF] = f("g-title", "Nome do presente *", { required: true, maxlength: "80", placeholder: "Ex.: Despertador vermelho" });
+    const [link, linkF] = f("g-link", "Link do produto", { type: "url", inputmode: "url", placeholder: "https://…" });
+    const [price, priceF] = f("g-price", "Preço (R$)", { inputmode: "decimal", placeholder: "89,90" });
+    const [shop, shopF] = f("g-store", "Loja", { maxlength: "40", placeholder: "Ex.: Amazon" });
+    const [image, imageF] = f("g-image", "Link da imagem (opcional)", { type: "url", inputmode: "url", placeholder: "https://…/foto.jpg" });
+    const [note, noteF] = f("g-note", "Observação", { maxlength: "300", placeholder: "Tamanho, cor, modelo…" }, "textarea");
+    if (g) { title.value = g.title || ""; link.value = g.link || ""; price.value = typeof g.price === "number" ? String(g.price).replace(".", ",") : ""; shop.value = g.store || ""; image.value = g.image || ""; note.value = g.note || ""; }
+    link.addEventListener("change", () => { if (!shop.value && safeUrl(link.value)) shop.placeholder = hostOf(link.value); });
+    const seg = h("div", { class: "seg", role: "radiogroup", "aria-label": "Ocasião" });
+    const drawSeg = () => seg.replaceChildren(...Object.entries(OCC).map(([k, l]) => h("button", { type: "button", role: "radio", "aria-checked": String(occ === k), class: occ === k ? "on" : "", onclick: () => { occ = k; drawSeg(); } }, l)));
+    drawSeg();
+    const err = h("p", { class: "err", hidden: true });
+    const submit = h("button", { class: "btn", type: "submit" }, editing ? "Salvar alterações" : "Adicionar à lista");
+    let close;
+    const form = h("form", { onsubmit: async (e) => {
+      e.preventDefault();
+      const t = title.value.trim();
+      if (!t) { err.textContent = "Dê um nome ao presente."; err.hidden = false; return; }
+      if (link.value.trim() && !safeUrl(link.value)) { err.textContent = "O link do produto precisa começar com http:// ou https://."; err.hidden = false; return; }
+      if (image.value.trim() && !safeUrl(image.value)) { err.textContent = "O link da imagem precisa começar com http:// ou https://."; err.hidden = false; return; }
+      const data = {
+        owner: state.me, occasion: occ, title: t,
+        link: safeUrl(link.value) || "", image: safeUrl(image.value) || "",
+        price: parsePrice(price.value), store: shop.value.trim() || hostOf(link.value) || "",
+        note: note.value.trim(), fav: g ? !!g.fav : false,
+        createdAt: g ? g.createdAt || Date.now() : Date.now(), updatedAt: Date.now(),
+      };
+      submit.disabled = true;
+      try { await api.putGift(g ? g.id : newId(), data); state.occ = occ; close(); render(); toast(editing ? "Presente atualizado" : "Presente adicionado"); }
+      catch (e2) { submit.disabled = false; err.textContent = e2 && e2.code === "invalid_argument" ? "Você só pode ver esta lista. Peça a quem compartilhou para te dar acesso de edição." : "Não deu para salvar. Confira sua conexão e tente de novo."; err.hidden = false; }
+    } },
+      titleF, linkF, h("div", { class: "row2" }, priceF, shopF),
+      h("div", { class: "field" }, h("label", {}, "Ocasião"), seg),
+      imageF, noteF, err,
+      h("div", { class: "actions" }, h("button", { class: "btn ghost", type: "button", onclick: () => close() }, "Cancelar"), submit));
+    close = sheet(h("h2", {}, editing ? "Editar presente" : "Novo presente"), form);
+    setTimeout(() => title.focus(), 50);
+  }
+
+  /* ---------- snow ---------- */
+  (function snow() {
+    const c = document.getElementById("snow"); const ctx = c.getContext("2d");
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let flakes = [], w = 0, hh = 0;
+    const size = () => { const r = window.devicePixelRatio || 1; w = innerWidth; hh = innerHeight; c.width = w * r; c.height = hh * r; ctx.setTransform(r, 0, 0, r, 0, 0);
+      flakes = Array.from({ length: Math.round(w * hh / 9000) }, () => ({ x: Math.random() * w, y: Math.random() * hh, r: Math.random() * 2.4 + .6, s: Math.random() * .5 + .2, d: Math.random() * Math.PI * 2 })); };
+    const draw = () => { ctx.clearRect(0, 0, w, hh); ctx.fillStyle = "rgba(255,255,255,.85)";
+      for (const f of flakes) { ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+        if (!still) { f.y += f.s; f.d += .01; f.x += Math.sin(f.d) * .3; if (f.y > hh + 4) { f.y = -4; f.x = Math.random() * w; } } }
+      if (!still) requestAnimationFrame(draw); };
+    addEventListener("resize", () => { size(); if (still) draw(); }); size(); draw();
+  })();
+
+  /* ---------- boot ---------- */
+  const saved = store.get("giftlist:me");
+  if (saved) { state.me = saved; state.viewing = saved; state.screen = "lists"; }
+  render();
+  connect();
+})();
+</script>
