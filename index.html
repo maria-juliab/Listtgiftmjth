@@ -29,6 +29,7 @@
   color-scheme: light;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { min-height: 100%; }
 body {
   background: linear-gradient(180deg, var(--sky-deep) 0%, var(--sky) 55%, #E3E8F6 100%);
@@ -118,6 +119,12 @@ input:focus, textarea:focus { border-color: var(--violet); outline: none; }
 .person:hover { background: var(--tile); }
 .person .av { width: 96px; height: 96px; }
 .person span { font-size: 16px; }
+.av-pick { display: flex; gap: 14px; justify-content: center; }
+.av-opt { border-radius: 50%; padding: 4px; border: 3px solid transparent; transition: transform .15s, border-color .15s; }
+.av-opt .av { width: 92px; height: 92px; display: block; }
+.av-opt:hover { transform: translateY(-2px); }
+.av-opt.on { border-color: var(--navy); }
+.link-btn { display: block; margin: 10px auto 0; font-size: 13px; font-weight: 600; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
 .people-label { text-align: center; color: var(--ink-faint); font-size: 13px; margin-top: 26px; }
 .empty-people { display: flex; justify-content: center; gap: 18px; margin-top: 22px; }
 .empty-people .av { width: 104px; height: 104px; }
@@ -250,24 +257,40 @@ button.heart:hover svg { transform: scale(1.15); }
     { face: "#8FD4C1", hat: "#5B6BD8", trim: "#DCE1FF", cheek: "#6DBBA6", ear: "#FFD23F" },
   ];
   const hash = (s) => { let x = 0; for (const c of s) x = (x * 31 + c.charCodeAt(0)) >>> 0; return x; };
+  // Bonecos: biscoitos de gengibre. 0 = com laço, 1 = com azevinho.
+  const AVATARS = [
+    `<circle cx="64" cy="66" r="58" fill="#FFFFFF"/>
+      <circle cx="64" cy="72" r="35" fill="#C9844A"/>
+      <circle cx="64" cy="72" r="29" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="6 5" fill="none"/>
+      <path d="M64 36 L 46 25 L 46 47 Z" fill="#E8505B"/><path d="M64 36 L 82 25 L 82 47 Z" fill="#E8505B"/>
+      <circle cx="64" cy="36" r="6" fill="#F26B2A"/>
+      <circle cx="53" cy="66" r="4.5" fill="#1F2A44"/><circle cx="75" cy="66" r="4.5" fill="#1F2A44"/>
+      <path d="M51 80 Q 64 92 77 80" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <circle cx="44" cy="77" r="5.5" fill="#E8505B" opacity=".75"/><circle cx="84" cy="77" r="5.5" fill="#E8505B" opacity=".75"/>`,
+    `<circle cx="64" cy="66" r="58" fill="#FFFFFF"/>
+      <circle cx="64" cy="72" r="35" fill="#B0703A"/>
+      <path d="M36 44 q 4 -6 8 0 t 8 0 t 8 0 t 8 0 t 8 0 t 8 0 t 8 0" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <ellipse cx="42" cy="40" rx="10" ry="5" fill="#6CCB9E" transform="rotate(-30 42 40)"/>
+      <ellipse cx="56" cy="34" rx="10" ry="5" fill="#6CCB9E" transform="rotate(20 56 34)"/>
+      <circle cx="49" cy="41" r="4" fill="#E8505B"/><circle cx="54" cy="45" r="4" fill="#E8505B"/>
+      <circle cx="53" cy="66" r="4.5" fill="#1F2A44"/><circle cx="75" cy="66" r="4.5" fill="#1F2A44"/>
+      <path d="M53 80 Q 64 89 75 80" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <circle cx="64" cy="98" r="4" fill="#5B6BD8"/>
+      <circle cx="44" cy="77" r="5.5" fill="#E8505B" opacity=".6"/><circle cx="84" cy="77" r="5.5" fill="#E8505B" opacity=".6"/>`,
+  ];
+  const AVATAR_NAMES = ["Biscoito com laço", "Biscoito com azevinho"];
+  const avIndex = (key, idx) => (Number.isInteger(idx) ? idx : hash(key || "x")) % AVATARS.length;
   function avatar(key, idx) {
-    const p = PALETTES[(idx ?? hash(key)) % PALETTES.length];
-    const elf = ((idx ?? hash(key)) % 2) === 1;
-    const hat = elf
-      ? `<path d="M22 50 C 24 20, 60 8, 84 22 C 96 30, 104 44, 106 60 L 30 60 Z" fill="${p.hat}"/><circle cx="18" cy="62" r="7" fill="${p.ear}"/>`
-      : `<path d="M28 52 C 34 18, 76 10, 96 30 C 100 24, 104 20, 104 14 L 112 18 C 110 30, 104 42, 100 56 Z" fill="${p.hat}"/><circle cx="108" cy="14" r="6" fill="${p.ear}"/>`;
-    return svg(`<svg class="av" viewBox="0 0 128 128" aria-hidden="true">
-      <circle cx="64" cy="66" r="58" fill="#FFFFFF"/>
-      <g fill="#1B1F2E"><circle cx="32" cy="80" r="16"/><circle cx="96" cy="80" r="16"/><circle cx="40" cy="96" r="14"/><circle cx="88" cy="96" r="14"/><circle cx="64" cy="100" r="14"/></g>
-      <circle cx="64" cy="78" r="30" fill="${p.face}"/>
-      <circle cx="40" cy="80" r="5" fill="${p.ear}"/><circle cx="88" cy="80" r="5" fill="${p.ear}"/>
-      <circle cx="48" cy="86" r="6" fill="${p.cheek}" opacity=".7"/><circle cx="80" cy="86" r="6" fill="${p.cheek}" opacity=".7"/>
-      <ellipse cx="54" cy="76" rx="5.5" ry="6.5" fill="#fff"/><ellipse cx="74" cy="76" rx="5.5" ry="6.5" fill="#fff"/>
-      <circle cx="55" cy="77" r="3.4" fill="#1B1F2E"/><circle cx="75" cy="77" r="3.4" fill="#1B1F2E"/>
-      <path d="M56 89 Q 64 97 72 89 Z" fill="#1B1F2E"/>
-      ${hat}
-      <g fill="${p.trim}"><circle cx="30" cy="58" r="8"/><circle cx="42" cy="54" r="8"/><circle cx="54" cy="52" r="8"/><circle cx="66" cy="52" r="8"/><circle cx="78" cy="53" r="8"/><circle cx="90" cy="56" r="8"/><circle cx="100" cy="60" r="7"/></g>
-    </svg>`);
+    return svg(`<svg class="av" viewBox="0 0 128 128" aria-hidden="true">${AVATARS[avIndex(key, idx)]}</svg>`);
+  }
+  // Escolha de boneco: dois botões lado a lado; onPick(n) ao tocar.
+  function avatarPicker(current, onPick) {
+    const wrap = h("div", { class: "av-pick", role: "radiogroup", "aria-label": "Escolha seu boneco" });
+    const draw = (sel) => wrap.replaceChildren(...AVATARS.map((_, n) => h("button", {
+      type: "button", role: "radio", class: "av-opt" + (n === sel ? " on" : ""), "aria-checked": String(n === sel), "aria-label": AVATAR_NAMES[n],
+      onclick: () => { draw(n); onPick(n); } }, avatar("", n))));
+    draw(current);
+    return wrap;
   }
   const giftPh = (key) => {
     const p = PALETTES[hash(key || "x") % PALETTES.length];
@@ -311,6 +334,11 @@ button.heart:hover svg { transform: scale(1.15); }
       if (backend) return backend.doc("people/" + id).set(data);
       const d = local.read(); d.people = d.people || {}; d.people[id] = data; local.write(d); local.emit();
     },
+    async setAvatar(id, n) {
+      if (fire) return fire.fs.doc("people/" + id).update({ avatar: n });
+      if (backend) return backend.doc("people/" + id).update({ avatar: n });
+      const d = local.read(); if (d.people && d.people[id]) d.people[id].avatar = n; local.write(d); local.emit();
+    },
     async putGift(id, data) {
       if (fire) return fire.fs.doc("gifts/" + id).set({ ...data, ownerUid: fire.auth.currentUser ? fire.auth.currentUser.uid : "" });
       if (backend) return backend.doc("gifts/" + id).set(data);
@@ -347,6 +375,7 @@ button.heart:hover svg { transform: scale(1.15); }
         if (!state.viewing) state.viewing = state.me;
         unsubG = fire.fs.collection("gifts").onSnapshot((s) => { state.gifts = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, onErr);
         if (state.screen === "who") state.screen = "lists";
+        draft.name = ""; draft.pass = ""; draft.av = null;
       } else {
         state.me = null; state.viewing = null; state.gifts = [];
         if (state.screen === "lists") state.screen = "who";
@@ -389,10 +418,19 @@ button.heart:hover svg { transform: scale(1.15); }
     )];
   }
 
+  const draft = { name: "", pass: "", av: null }; // keeps the form filled when the screen redraws
   function who() {
     const err = h("p", { class: "err", hidden: true });
     const input = h("input", { id: "who-name", autocomplete: "username", placeholder: "Ex.: Maria Júlia", maxlength: "40", required: true });
     const pass = state.fire ? h("input", { id: "who-pass", type: "password", autocomplete: "current-password", placeholder: "Mínimo de 6 caracteres", minlength: "6", required: true }) : null;
+    input.value = draft.name; if (pass) pass.value = draft.pass;
+    const used = new Set(state.people.map((p) => avIndex(p.id, p.avatar)));
+    if (draft.av == null) { const free = AVATARS.findIndex((_, n) => !used.has(n)); draft.av = free < 0 ? 0 : free; }
+    const pickField = h("div", { class: "field" }, h("label", {}, "Escolha seu boneco"), avatarPicker(draft.av, (n) => { draft.av = n; }));
+    const syncPick = () => { const id = slug(input.value); pickField.hidden = !id || state.people.some((p) => p.id === id); };
+    syncPick();
+    input.addEventListener("input", () => { draft.name = input.value; syncPick(); });
+    if (pass) pass.addEventListener("input", () => { draft.pass = pass.value; });
     const submitBtn = h("button", { class: "btn", type: "submit", disabled: state.fire && state.mode !== "db" }, state.fire && state.mode === "loading" ? "Conectando…" : "Abrir minha lista");
     const form = h("form", { class: "who-form", onsubmit: async (e) => {
       e.preventDefault();
@@ -411,7 +449,7 @@ button.heart:hover svg { transform: scale(1.15); }
             let cred;
             try { cred = await fire.auth.createUserWithEmailAndPassword(emailFor(id), pw); }
             catch (e2) { if (e2 && e2.code === "auth/email-already-in-use") cred = await fire.auth.signInWithEmailAndPassword(emailFor(id), pw); else throw e2; }
-            await api.putPerson(id, { id, name, uid: cred.user.uid, createdAt: Date.now(), avatar: state.people.length % PALETTES.length });
+            await api.putPerson(id, { id, name, uid: cred.user.uid, createdAt: Date.now(), avatar: draft.av });
           }
         } catch (e2) {
           const c = e2 && e2.code;
@@ -424,18 +462,19 @@ button.heart:hover svg { transform: scale(1.15); }
         return;
       }
       if (!existing) {
-        try { await api.putPerson(id, { id, name, createdAt: Date.now(), avatar: state.people.length % PALETTES.length }); }
+        try { await api.putPerson(id, { id, name, createdAt: Date.now(), avatar: draft.av }); }
         catch (e2) { err.textContent = "Não deu para salvar seu nome agora. Confira sua conexão e tente de novo."; err.hidden = false; return; }
       }
       login(id);
     } },
       h("div", { class: "field" }, h("label", { for: "who-name" }, "Seu nome"), input),
       pass ? h("div", { class: "field" }, h("label", { for: "who-pass" }, "Senha"), pass) : null,
+      pickField,
       err,
       submitBtn,
       state.fire ? h("p", { class: "status", style: "margin-top:2px" }, "Primeira vez? Escolha uma senha e sua lista é criada na hora.") : null,
     );
-    const pick = (p) => { if (state.fire) { input.value = p.name; pass.focus(); } else login(p.id); };
+    const pick = (p) => { if (state.fire) { input.value = draft.name = p.name; syncPick(); pass.focus(); } else login(p.id); };
     const people = [...state.people].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
     return [h("section", { class: "screen" },
       h("h1", {}, "Quem está escolhendo os presentes?"),
@@ -451,6 +490,7 @@ button.heart:hover svg { transform: scale(1.15); }
   }
 
   function login(id) {
+    draft.name = ""; draft.pass = ""; draft.av = null;
     state.me = id; state.viewing = id; store.set("giftlist:me", id); go("lists");
   }
 
@@ -487,6 +527,7 @@ button.heart:hover svg { transform: scale(1.15); }
           avatar(p.id, p.avatar), h("span", {}, p.name, p.id === state.me ? h("small", {}, " · você") : null)))),
       h("div", { class: "pills", role: "tablist", "aria-label": "Ocasião" },
         Object.entries(OCC).map(([k, label]) => h("button", { class: "pill" + (state.occ === k ? " on" : ""), role: "tab", "aria-selected": String(state.occ === k), onclick: () => { state.occ = k; render(); } }, label, h("span", { class: "n" }, count(k))))),
+      mine && me && state.people.some((p) => p.id === me.id) ? h("button", { class: "link-btn", type: "button", onclick: () => openAvatar(me) }, "Trocar meu boneco") : null,
       !mine && view ? h("p", { class: "readonly" }, `Só para ver: quem edita essa lista é ${view.name}.`) : null,
       grid,
       items.length ? h("p", { class: "total" }, `${items.length} ${items.length === 1 ? "presente" : "presentes"}${sum ? " · total " + money(sum) : ""}`) : null,
@@ -542,6 +583,21 @@ button.heart:hover svg { transform: scale(1.15); }
       g.note ? h("div", { class: "detail-note" }, g.note) : null,
       h("div", { style: "height:16px" }), actions, h("div", { style: "height:10px" }), confirmBox,
       !link ? h("p", { class: "status" }, "Sem link do produto.") : null);
+  }
+
+  function openAvatar(me) {
+    let chosen = avIndex(me.id, me.avatar);
+    const err = h("p", { class: "err", hidden: true });
+    let close;
+    close = sheet(h("h2", {}, "Trocar meu boneco"),
+      avatarPicker(chosen, (n) => { chosen = n; }),
+      err,
+      h("div", { class: "actions", style: "margin-top:18px" },
+        h("button", { class: "btn ghost", type: "button", onclick: () => close() }, "Cancelar"),
+        h("button", { class: "btn", type: "button", onclick: async () => {
+          try { await api.setAvatar(me.id, chosen); close(); toast("Boneco trocado"); }
+          catch { err.textContent = "Não deu para trocar o boneco. Se o site usa Firebase, publique as regras novas do arquivo firestore.rules."; err.hidden = false; }
+        } }, "Salvar")));
   }
 
   function openForm(g) {

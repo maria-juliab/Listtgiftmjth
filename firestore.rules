@@ -9,7 +9,11 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.uid == request.auth.uid
         && request.auth.token.email == personId + '@presentes.example.com';
-      allow update, delete: if false;
+      // Cada um pode trocar só o próprio boneco (campo "avatar").
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avatar']);
+      allow delete: if false;
     }
 
     // Presentes: quem entrou vê todas as listas,
