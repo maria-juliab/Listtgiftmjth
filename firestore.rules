@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Pessoas: qualquer um vê os nomes (para mostrar na tela de entrada).
+    // Cada conta só cria o próprio cadastro, com o próprio nome de usuário.
+    match /people/{personId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.auth.token.email == personId + '@presentes.example.com';
+      allow update, delete: if false;
+    }
+
+    // Presentes: quem entrou vê todas as listas,
+    // mas só cria, edita e apaga os presentes da própria lista.
+    match /gifts/{giftId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.auth.token.email == request.resource.data.owner + '@presentes.example.com';
+      allow update: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.owner == resource.data.owner;
+      allow delete: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid;
+    }
+  }
+}

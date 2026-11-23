@@ -207,6 +207,7 @@ button.heart:hover svg { transform: scale(1.15); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 
+<script src="firebase-config.js"></script>
 <canvas id="snow" aria-hidden="true"></canvas>
 <div class="hills" aria-hidden="true">
   <svg viewBox="0 0 1440 110" preserveAspectRatio="none"><path d="M0 70 C 240 20, 420 20, 640 55 S 1020 95, 1200 50 S 1400 30, 1440 45 L1440 110 L0 110Z" fill="#E6EAF5"/><path d="M0 92 C 300 60, 520 70, 760 88 S 1180 70, 1440 84 L1440 110 L0 110Z" fill="#F4F6FC"/></svg>
@@ -292,9 +293,12 @@ button.heart:hover svg { transform: scale(1.15); }
   const ARROW = `<svg viewBox="0 0 32 32" fill="none" stroke="#1E2235" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l7 7-7 7M16 9l7 7-7 7"/></svg>`;
   const HEART = `<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11.2A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 2.8C20 15.7 12 21 12 21z"/></svg>`;
 
-  /* ---------- data layer: shared db, or this browser as a fallback ---------- */
-  const state = { people: [], gifts: [], screen: "intro", me: null, viewing: null, occ: "natal", mode: "loading", canWrite: true };
+  /* ---------- data layer: Firebase (name + password), claude.ai db, or this browser ---------- */
+  const state = { people: [], gifts: [], screen: "intro", me: null, viewing: null, occ: "natal", mode: "loading", canWrite: true, fire: false };
   let backend = null;
+  let fire = null; // { auth, fs } when FIREBASE_CONFIG is set
+  const EMAIL_DOMAIN = "presentes.example.com"; // nomes viram "nome@presentes.example.com" só para o login do Firebase
+  const emailFor = (id) => id + "@" + EMAIL_DOMAIN;
 
   const local = {
     read() { try { return JSON.parse(store.get("giftlist:data") || "{}"); } catch { return {}; } },
@@ -303,21 +307,56 @@ button.heart:hover svg { transform: scale(1.15); }
   };
   const api = {
     async putPerson(id, data) {
+      if (fire) return fire.fs.doc("people/" + id).set(data);
       if (backend) return backend.doc("people/" + id).set(data);
       const d = local.read(); d.people = d.people || {}; d.people[id] = data; local.write(d); local.emit();
     },
     async putGift(id, data) {
+      if (fire) return fire.fs.doc("gifts/" + id).set({ ...data, ownerUid: fire.auth.currentUser ? fire.auth.currentUser.uid : "" });
       if (backend) return backend.doc("gifts/" + id).set(data);
       const d = local.read(); d.gifts = d.gifts || {}; d.gifts[id] = data; local.write(d); local.emit();
     },
     async delGift(id) {
+      if (fire) return fire.fs.doc("gifts/" + id).delete();
       if (backend) return backend.doc("gifts/" + id).delete();
       const d = local.read(); delete (d.gifts || {})[id]; local.write(d); local.emit();
     },
   };
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
+  const loadScript = (src) => new Promise((ok, fail) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = fail; document.head.append(s); });
+
+  async function connectFirebase(cfg) {
+    state.fire = true; state.mode = "loading"; state.me = null; render();
+    try {
+      const base = "https://www.gstatic.com/firebasejs/10.12.2/";
+      await loadScript(base + "firebase-app-compat.js");
+      await Promise.all([loadScript(base + "firebase-auth-compat.js"), loadScript(base + "firebase-firestore-compat.js")]);
+      firebase.initializeApp(cfg);
+    } catch { state.mode = "error"; render(); return; }
+    fire = { auth: firebase.auth(), fs: firebase.firestore() };
+    let gotP = false, authKnown = false, unsubG = null;
+    const ready = () => { if (gotP && authKnown && state.mode !== "error") state.mode = "db"; render(); };
+    const onErr = () => { state.mode = "error"; render(); };
+    fire.fs.collection("people").onSnapshot((s) => { gotP = true; state.people = s.docs.map((d) => d.data()).filter(Boolean); ready(); }, onErr);
+    fire.auth.onAuthStateChanged((u) => {
+      authKnown = true;
+      if (unsubG) { unsubG(); unsubG = null; }
+      if (u && u.email) {
+        state.me = u.email.split("@")[0];
+        if (!state.viewing) state.viewing = state.me;
+        unsubG = fire.fs.collection("gifts").onSnapshot((s) => { state.gifts = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, onErr);
+        if (state.screen === "who") state.screen = "lists";
+      } else {
+        state.me = null; state.viewing = null; state.gifts = [];
+        if (state.screen === "lists") state.screen = "who";
+      }
+      ready();
+    });
+  }
+
   async function connect() {
+    if (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) return connectFirebase(window.FIREBASE_CONFIG);
     let db = null;
     try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { db = null; }
     if (!db) { state.mode = "local"; local.emit(); return; }
@@ -352,13 +391,38 @@ button.heart:hover svg { transform: scale(1.15); }
 
   function who() {
     const err = h("p", { class: "err", hidden: true });
-    const input = h("input", { id: "who-name", autocomplete: "name", placeholder: "Ex.: Maria Júlia", maxlength: "40", required: true });
+    const input = h("input", { id: "who-name", autocomplete: "username", placeholder: "Ex.: Maria Júlia", maxlength: "40", required: true });
+    const pass = state.fire ? h("input", { id: "who-pass", type: "password", autocomplete: "current-password", placeholder: "Mínimo de 6 caracteres", minlength: "6", required: true }) : null;
+    const submitBtn = h("button", { class: "btn", type: "submit", disabled: state.fire && state.mode !== "db" }, state.fire && state.mode === "loading" ? "Conectando…" : "Abrir minha lista");
     const form = h("form", { class: "who-form", onsubmit: async (e) => {
       e.preventDefault();
       const name = input.value.trim().replace(/\s+/g, " ");
       const id = slug(name);
       if (!id) { err.textContent = "Digite seu nome para continuar."; err.hidden = false; return; }
       const existing = state.people.find((p) => p.id === id);
+      if (fire) {
+        const pw = pass.value;
+        if (pw.length < 6) { err.textContent = "A senha precisa ter pelo menos 6 caracteres."; err.hidden = false; return; }
+        submitBtn.disabled = true; err.hidden = true;
+        const fail = (msg) => { err.textContent = msg; err.hidden = false; submitBtn.disabled = false; };
+        try {
+          if (existing) await fire.auth.signInWithEmailAndPassword(emailFor(id), pw);
+          else {
+            let cred;
+            try { cred = await fire.auth.createUserWithEmailAndPassword(emailFor(id), pw); }
+            catch (e2) { if (e2 && e2.code === "auth/email-already-in-use") cred = await fire.auth.signInWithEmailAndPassword(emailFor(id), pw); else throw e2; }
+            await api.putPerson(id, { id, name, uid: cred.user.uid, createdAt: Date.now(), avatar: state.people.length % PALETTES.length });
+          }
+        } catch (e2) {
+          const c = e2 && e2.code;
+          if (c === "auth/invalid-credential" || c === "auth/wrong-password" || c === "auth/invalid-login-credentials") fail(existing ? "Senha incorreta. Tente de novo." : "Esse nome já tem conta e a senha não confere.");
+          else if (c === "auth/operation-not-allowed" || c === "auth/admin-restricted-operation") fail("Novos cadastros estão fechados nesta lista.");
+          else if (c === "auth/too-many-requests") fail("Muitas tentativas seguidas. Espere alguns minutos e tente de novo.");
+          else if (c === "auth/network-request-failed") fail("Sem conexão. Confira sua internet e tente de novo.");
+          else fail("Não deu para entrar agora. Tente de novo.");
+        }
+        return;
+      }
       if (!existing) {
         try { await api.putPerson(id, { id, name, createdAt: Date.now(), avatar: state.people.length % PALETTES.length }); }
         catch (e2) { err.textContent = "Não deu para salvar seu nome agora. Confira sua conexão e tente de novo."; err.hidden = false; return; }
@@ -366,19 +430,23 @@ button.heart:hover svg { transform: scale(1.15); }
       login(id);
     } },
       h("div", { class: "field" }, h("label", { for: "who-name" }, "Seu nome"), input),
+      pass ? h("div", { class: "field" }, h("label", { for: "who-pass" }, "Senha"), pass) : null,
       err,
-      h("button", { class: "btn", type: "submit" }, "Abrir minha lista"),
+      submitBtn,
+      state.fire ? h("p", { class: "status", style: "margin-top:2px" }, "Primeira vez? Escolha uma senha e sua lista é criada na hora.") : null,
     );
+    const pick = (p) => { if (state.fire) { input.value = p.name; pass.focus(); } else login(p.id); };
     const people = [...state.people].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
     return [h("section", { class: "screen" },
       h("h1", {}, "Quem está escolhendo os presentes?"),
       h("p", { class: "sub" }, "Vamos começar a magia! Digite seu nome ou toque em você."),
       people.length
         ? [h("p", { class: "people-label" }, "Já têm lista aqui"),
-           h("div", { class: "people" }, people.map((p) => h("button", { class: "person", type: "button", onclick: () => login(p.id) }, avatar(p.id, p.avatar), h("span", {}, p.name))))]
+           h("div", { class: "people" }, people.map((p) => h("button", { class: "person", type: "button", onclick: () => pick(p) }, avatar(p.id, p.avatar), h("span", {}, p.name))))]
         : h("div", { class: "empty-people" }, avatar("a", 0), avatar("b", 1)),
       form,
-      state.mode === "local" ? h("p", { class: "status" }, "Abra pelo link do Claude para salvar e compartilhar. Fora dele, a lista fica só neste navegador.") : null,
+      state.mode === "local" ? h("p", { class: "status" }, "Lista salva só neste navegador. Configure o Firebase (veja o README) para compartilhar.") : null,
+      state.fire && state.mode === "error" ? h("p", { class: "err", style: "text-align:center" }, "Não deu para conectar ao banco de dados. Recarregue a página.") : null,
     )];
   }
 
@@ -387,8 +455,9 @@ button.heart:hover svg { transform: scale(1.15); }
   }
 
   function lists() {
-    const me = state.people.find((p) => p.id === state.me);
-    if (!me && state.mode !== "loading" && state.mode !== "slow") { state.me = null; store.del("giftlist:me"); return who(); }
+    let me = state.people.find((p) => p.id === state.me);
+    if (state.fire) { if (!state.me && state.mode !== "loading") return who(); if (!me && state.me) me = { id: state.me, name: state.me }; }
+    else if (!me && state.mode !== "loading" && state.mode !== "slow") { state.me = null; store.del("giftlist:me"); return who(); }
     const view = state.people.find((p) => p.id === state.viewing) || me;
     const mine = view && view.id === state.me;
     const people = [...state.people].sort((a, b) => (a.id === state.me ? -1 : b.id === state.me ? 1 : (a.createdAt || 0) - (b.createdAt || 0)));
@@ -407,7 +476,7 @@ button.heart:hover svg { transform: scale(1.15); }
 
     return [h("section", { class: "screen" },
       h("div", { class: "topbar" },
-        h("button", { class: "icon-btn", "aria-label": "Trocar de pessoa", title: "Trocar de pessoa", onclick: () => { state.me = null; store.del("giftlist:me"); go("who"); },
+        h("button", { class: "icon-btn", "aria-label": state.fire ? "Sair" : "Trocar de pessoa", title: state.fire ? "Sair" : "Trocar de pessoa", onclick: () => { if (fire) { fire.auth.signOut(); return; } state.me = null; store.del("giftlist:me"); go("who"); },
           html: `<svg viewBox="0 0 24 24" fill="none" stroke="#1E2235" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>` }),
         mine ? h("button", { class: "icon-btn", "aria-label": "Adicionar presente", title: "Adicionar presente", onclick: () => openForm(null),
           html: `<svg viewBox="0 0 24 24" fill="#1E2235"><rect x="3" y="9" width="18" height="4" rx="1"/><rect x="4.5" y="13" width="15" height="8" rx="1"/><rect x="11" y="9" width="2" height="12" fill="#F1F3FC"/><path d="M12 9C9 4 5 6 7.5 8.5 9 9 12 9 12 9zm0 0c3-5 7-3 4.5-.5C15 9 12 9 12 9z"/></svg>` }) : h("span", { style: "width:42px" }),
@@ -421,7 +490,7 @@ button.heart:hover svg { transform: scale(1.15); }
       !mine && view ? h("p", { class: "readonly" }, `Só para ver: quem edita essa lista é ${view.name}.`) : null,
       grid,
       items.length ? h("p", { class: "total" }, `${items.length} ${items.length === 1 ? "presente" : "presentes"}${sum ? " · total " + money(sum) : ""}`) : null,
-      state.mode === "local" ? h("p", { class: "status" }, "Salvo só neste navegador. Abra pelo link do Claude para compartilhar.") : null,
+      state.mode === "local" ? h("p", { class: "status" }, "Salvo só neste navegador. Configure o Firebase (veja o README) para compartilhar.") : null,
       state.mode === "error" ? h("p", { class: "status" }, "Sem conexão com a lista compartilhada agora. Recarregue a página.") : null,
     )];
   }
@@ -536,7 +605,8 @@ button.heart:hover svg { transform: scale(1.15); }
   })();
 
   /* ---------- boot ---------- */
-  const saved = store.get("giftlist:me");
+  const saved = window.FIREBASE_CONFIG ? null : store.get("giftlist:me");
+  if (window.FIREBASE_CONFIG) state.screen = "intro";
   if (saved) { state.me = saved; state.viewing = saved; state.screen = "lists"; }
   render();
   connect();
